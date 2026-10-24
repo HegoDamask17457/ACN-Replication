@@ -1,0 +1,62 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\toprule
+                    &\multicolumn{2}{c}{\uline{\textit{Ever Attend}}}&\multicolumn{2}{c}{\uline{\textit{Attendance Year}}}\\
+                    &\multicolumn{1}{c}{(1)}        &\multicolumn{1}{c}{(2)}        &\multicolumn{1}{c}{(3)}        &\multicolumn{1}{c}{(4)}        \\
+\midrule
+Republican          &      0.0527\sym{**}&      0.0514\sym{**}&      -3.818\sym{+} &                    \\
+                    &    (0.0143)        &    (0.0142)        &     (2.012)        &                    \\
+\addlinespace
+Unified Appointment &     -0.0201        &     -0.0211        &      -3.826\sym{+} &                    \\
+                    &    (0.0151)        &    (0.0148)        &     (2.026)        &                    \\
+\addlinespace
+Cross-Party Appt    &     -0.0346        &                    &      -0.859        &                    \\
+                    &    (0.0280)        &                    &     (1.045)        &                    \\
+\addlinespace
+State Senator       &      0.0438        &                    &      -1.214        &                    \\
+                    &    (0.0332)        &                    &     (1.241)        &                    \\
+\addlinespace
+State Lower Ct      &     -0.0159        &     -0.0171        &       0.276        &                    \\
+                    &    (0.0154)        &    (0.0152)        &     (0.556)        &                    \\
+\addlinespace
+State Sup Court     &     0.00355        &    0.000846        &       0.711        &                    \\
+                    &    (0.0262)        &    (0.0261)        &     (1.023)        &                    \\
+\addlinespace
+State House         &     -0.0231        &     -0.0219        &       1.333        &                    \\
+                    &    (0.0247)        &    (0.0243)        &     (1.146)        &                    \\
+\addlinespace
+Solicit Gen.        &      -0.129        &                    &           0        &                    \\
+                    &     (0.108)        &                    &         (.)        &                    \\
+\addlinespace
+Solicitor Gen. Off. &      0.0416        &      0.0227        &       2.704        &                    \\
+                    &    (0.0751)        &    (0.0736)        &     (2.513)        &                    \\
+\addlinespace
+U.S. Senator        &     -0.0216        &     -0.0200        &       3.012        &                    \\
+                    &    (0.0646)        &    (0.0638)        &     (4.798)        &                    \\
+\addlinespace
+State Atty. Gen.    &   -0.000513        &    -0.00691        &      -0.876        &      -1.309        \\
+                    &    (0.0249)        &    (0.0244)        &     (0.983)        &     (0.914)        \\
+\addlinespace
+Priv. Practice      &     0.00298        &     0.00257        &      -0.501        &                    \\
+                    &    (0.0254)        &    (0.0252)        &     (1.027)        &                    \\
+\addlinespace
+Mayor               &      0.0344        &      0.0265        &      -1.072        &                    \\
+                    &    (0.0520)        &    (0.0513)        &     (2.441)        &                    \\
+\addlinespace
+Local Court         &      0.0318        &      0.0305        &       0.342        &                    \\
+                    &    (0.0229)        &    (0.0228)        &     (0.751)        &                    \\
+\addlinespace
+U.S. House          &     -0.0659        &     -0.0659        &       4.188        &                    \\
+                    &    (0.0413)        &    (0.0411)        &     (6.947)        &                    \\
+\addlinespace
+Governor            &    -0.00791        &                    &      -5.743        &                    \\
+                    &    (0.0715)        &                    &     (4.661)        &                    \\
+\midrule
+All Variables       &           X        &                    &           X        &                    \\
+Post Elastic Net    &                    &           X        &                    &           X        \\
+N                   &        2759        &        2759        &         400        &         400        \\
+adj. R-sq           &       0.150        &       0.150        &       0.439        &       0.448        \\
+\bottomrule
+\end{tabular}
+}

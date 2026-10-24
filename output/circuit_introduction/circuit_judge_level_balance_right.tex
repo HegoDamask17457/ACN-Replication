@@ -1,0 +1,59 @@
+{
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\begin{tabular}{l*{4}{c}}
+\toprule
+                    &\multicolumn{2}{c}{\uline{\textit{Ever Attend}}}&\multicolumn{2}{c}{\uline{\textit{Attendance Year}}}\\
+                    &(1\text{ cont.})        &(2\text{ cont.})        &(3\text{ cont.})        &(4\text{ cont.})        \\
+\midrule
+District Atty       &     -0.0355        &     -0.0389        &      -0.668        &                    \\
+                    &    (0.0330)        &    (0.0329)        &     (0.861)        &                    \\
+\addlinespace
+Congressional Counsel&     -0.0422        &     -0.0350        &      -0.240        &                    \\
+                    &    (0.0652)        &    (0.0652)        &     (2.121)        &                    \\
+\addlinespace
+City Council        &     -0.0437        &                    &       1.919        &                    \\
+                    &    (0.0468)        &                    &     (1.191)        &                    \\
+\addlinespace
+Asst U.S. Atty      &      0.0295        &      0.0286        &      -0.339        &                    \\
+                    &    (0.0260)        &    (0.0259)        &     (0.645)        &                    \\
+\addlinespace
+Atty General        &      0.0774        &                    &      -1.253        &                    \\
+                    &     (0.201)        &                    &     (4.573)        &                    \\
+\addlinespace
+Asst Dist Atty      &      0.0101        &      0.0155        &      -0.830        &                    \\
+                    &    (0.0282)        &    (0.0281)        &     (0.700)        &                    \\
+\addlinespace
+Any Govt            &      0.0742\sym{**}&      0.0768\sym{**}&      -0.491        &                    \\
+                    &    (0.0281)        &    (0.0279)        &     (0.839)        &                    \\
+\addlinespace
+Black               &      0.0668\sym{+} &      0.0757\sym{*} &       0.533        &                    \\
+                    &    (0.0385)        &    (0.0382)        &     (0.921)        &                    \\
+\addlinespace
+Born in 1910s       &       0.156\sym{**}&      0.0628\sym{*} &      -6.722\sym{*} &      -7.412\sym{**}\\
+                    &    (0.0388)        &    (0.0273)        &     (2.682)        &     (0.688)        \\
+\addlinespace
+Born in 1920s       &       0.320\sym{**}&       0.224\sym{**}&      -2.989        &      -3.725\sym{**}\\
+                    &    (0.0388)        &    (0.0272)        &     (2.655)        &     (0.574)        \\
+\addlinespace
+Born in 1930s       &       0.273\sym{**}&       0.177\sym{**}&       0.604        &                    \\
+                    &    (0.0395)        &    (0.0279)        &     (2.659)        &                    \\
+\addlinespace
+Born in 1940s       &       0.134\sym{**}&                    &       4.943\sym{+} &       4.440\sym{**}\\
+                    &    (0.0395)        &                    &     (2.698)        &     (0.719)        \\
+\addlinespace
+Born in 1950s       &      0.0241        &     -0.0717\sym{*} &       8.105\sym{**}&       7.303\sym{**}\\
+                    &    (0.0459)        &    (0.0360)        &     (3.100)        &     (1.626)        \\
+\addlinespace
+Bnktcy Judge        &     -0.0616        &     -0.0651        &      -2.599        &                    \\
+                    &    (0.0827)        &    (0.0828)        &     (2.373)        &                    \\
+\addlinespace
+Magistrate          &     -0.0931\sym{*} &     -0.0819\sym{+} &       0.432        &                    \\
+                    &    (0.0455)        &    (0.0454)        &     (1.577)        &                    \\
+\midrule
+All Variables       &           X        &                    &           X        &                    \\
+Post Elastic Net    &                    &           X        &                    &           X        \\
+N                   &        1777        &        1777        &         379        &         379        \\
+adj. R-sq           &       0.087        &       0.084        &       0.430        &       0.445        \\
+\bottomrule
+\end{tabular}
+}

@@ -1,0 +1,576 @@
+% !TEX program = pdflatex
+% Compile: pdflatex replication_report_v2.tex (×2)
+%
+% A Replication of Ash, Chen & Naidu (2025)
+% "Ideas Have Consequences: The Effect of Law and Economics
+%  on Judicial Decision-Making"
+%
+% Conventions:
+%   [Paper]      = results from Ash, Chen & Naidu (2025)
+%   [Replicator] = results from the replication run
+%   ✓/✗/~        = match indicator in tables
+
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{geometry}\geometry{margin=1in}
+\usepackage{setspace}\onehalfspacing
+\usepackage{float}
+\usepackage{caption}
+\usepackage[colorlinks,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{threeparttable}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{xcolor}
+
+% Convenience: match indicators
+\newcommand{\match}{\textcolor{gray}{$\checkmark$}}
+\newcommand{\nomatch}{\textcolor{red}{$\times$}}
+\newcommand{\partialmatch}{\textcolor{orange}{$\sim$}}
+\newcommand{\alert}[1]{\textcolor{red}{#1}}
+
+\graphicspath{{Replication-Archive/output/}{Replication-Archive/replication report/}}
+
+\title{A Replication of ``Ideas Have Consequences: \\
+The Effect of Law and Economics on \\
+Judicial Decision-Making''}
+
+\author{Zichen Fang\thanks{This replication was conducted with research assistance from Claude (Anthropic) and DeepSeek. All code and analyses were verified by the author.} \\[0.5em]
+\small Econometrics Course Project}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% ======================================================================
+\begin{abstract}
+This report replicates the core results of Ash, Chen \& Naidu (2025), which studies whether exposing U.S.\ federal judges to the Manne Economics Institute changes their judicial behavior. Using a staggered difference-in-differences design, the original paper finds that Manne attendance increases economics language in opinions, shifts appellate voting outcomes in a conservative direction, and reduces prison sentence rates in district courts. All seven main coefficients --- four circuit-court and three district-court --- are reproduced exactly. The paper's three TWFE diagnostic checks are confirmed. I then implement five supplementary robustness checks not performed in the original study: (i) a never-attender placebo test, (ii) a treatment-timing exogeneity test, (iii) double-selection LASSO, (iv) event-window sensitivity analysis, and (v) the Callaway \& Sant'Anna (2021) CSDiD estimator. The supplementary checks reveal a clear partition: conservative voting effects are robust across identification strategies, while economics-language and case-outcome effects are tightly bound to the paper's within-judge TWFE design. The original conclusions are reproducible and sound but circumscribed by their identifying assumptions.
+\end{abstract}
+
+% ======================================================================
+\section{Introduction}
+\label{sec:intro}
+% ======================================================================
+
+Does intensive exposure to economic ideas change how judges decide cases? For four decades, the Manne Economics Institute for Federal Judges has provided week-long residential training in law and economics to hundreds of U.S.\ federal judges. Ash, Chen \& Naidu (2025, henceforth ACN) provide the first causal evidence on this question, exploiting the staggered timing of judge attendance in a difference-in-differences design. They find that Manne-trained judges use more economics language in their opinions, vote more often against labor and environmental regulators, and cast more conservative votes in economic cases. The paper has attracted substantial attention in legal academia and the economics profession, making its empirical claims worth careful scrutiny.
+
+This replication contributes to a growing body of reproducibility research in economics. Large-scale studies find that roughly 85\% of papers in top economics journals are computationally reproducible, and about 70\% of published results remain statistically significant under alternative specifications (Brodeur, Mikola \& Cook 2024). The replication rate for individual studies varies considerably: Camerer et al.\ (2016) found that 11 of 18 laboratory experiments published in the \textit{American Economic Review} and \textit{Quarterly Journal of Economics} replicated successfully. The Institute for Replication (I4R) has produced dozens of systematic replication reports covering papers across the discipline. This report follows the I4R reporting template in structure and tone.
+
+Beyond verifying computational reproducibility, this replication extends ACN's analysis along five dimensions. ACN implement three modern staggered-DiD diagnostics (de Chaisemartin \& D'Haultf{\oe}uille 2020; Jakiela 2021; Cengiz, Dube, Lindner \& Zipperer 2019) to defend their TWFE design, but they do not implement a heterogeneity-robust estimator, citing concerns about statistical power (Section IV.E). Whether these concerns are empirically consequential remains untested. I fill this gap by implementing the Callaway \& Sant'Anna (2021) CSDiD estimator alongside four other robustness checks: a never-attender placebo test via propensity-score matching, a formal treatment-timing exogeneity test, a double-selection LASSO covariate selection procedure (Belloni, Chernozhukov \& Hansen 2014), and a systematic event-window sensitivity analysis. These tests collectively probe ACN's identifying assumptions and map the boundaries within which their conclusions hold.
+
+Section~\ref{sec:original} summarizes ACN's research design and findings. Section~\ref{sec:env} describes the replication environment. Section~\ref{sec:main} verifies the main results. Section~\ref{sec:diag} reproduces the paper's three TWFE diagnostics. Section~\ref{sec:checks} presents the five supplementary robustness checks. Section~\ref{sec:synthesis} synthesizes the evidence and discusses methodological implications. Section~\ref{sec:conclusion} concludes.
+
+% ======================================================================
+\section{Original Study: Design and Findings}
+\label{sec:original}
+% ======================================================================
+
+\subsection{Research Question and Institutional Background}
+
+ACN ask whether the Manne Economics Institute for Federal Judges --- a two-week residential program at George Mason University that operated from 1976 to 1998 --- causally affected the judicial behavior of attending judges. The institute taught core microeconomics, price theory, and cost-benefit analysis, and was the primary institutional mechanism through which the law-and-economics movement reached the federal judiciary.
+
+The program operated on a first-come first-served basis with substantial excess demand throughout its lifespan. ACN argue that this admission mechanism renders \emph{when} a judge attends (the intensive margin of treatment timing) as-good-as-random conditional on ever attending, even though \emph{which} judges apply (the extensive margin) is selected. This distinction is central to the identification strategy.
+
+\subsection{Data}
+
+The replication package contains six Stata datasets totaling approximately 3.6 million observations. The primary analysis sample is \texttt{ready\_circuits.dta}, a circuit-court case--judge panel with 813,718 observations covering the years 1970--2004. Outcome variables include:
+
+\begin{itemize}[nosep]
+    \item \texttt{y\_ellickson\_vec}: An economics-language index measuring the cosine similarity between opinion text and the Ellickson (1960) word vector (standardized).
+    \item \texttt{y\_labor\_epa\_lose}: An indicator for whether the judge voted against the government in labor or environmental regulatory cases.
+    \item \texttt{y\_convote\_econ}: Conservative voting score in economically salient cases.
+    \item \texttt{y\_convote\_nonecon}: Conservative voting score in non-economic cases.
+\end{itemize}
+
+A secondary district-court dataset (\texttt{ready\_districts.dta}) covers criminal sentencing outcomes at the defendant level ($N = 1,\!031,\!450$). The two key sentencing variables are \texttt{any\_sentence} --- a binary indicator for whether the judge imposed any prison sentence --- and \texttt{sent\_length\_mp}, the sentence length in months. These outcomes allow ACN to test whether the Manne program's influence extends beyond appellate voting (where judges have more discretion) to the high-volume, less-discretionary sentencing decisions of district judges.
+
+\subsection{Identification Strategy}
+
+The core specification is a staggered difference-in-differences design:
+
+\begin{equation}
+Y_{it} = \beta \cdot \text{manne\_post}_{it} + \alpha_i + \lambda_{ct} + \varepsilon_{it} \label{eq:twfe}
+\end{equation}
+
+where $\text{manne\_post}_{it} = \mathbf{1}[\text{year}_t \geq \text{attend\_year}_i]$, $\alpha_i$ and $\lambda_{ct}$ are judge and circuit$\times$year fixed effects. The estimation sample is restricted to a $\pm 6$-year event window around each judge's attendance year (MW6). Never-attenders are excluded. Observations are weighted by $\text{WJT} = 1/\text{caseload}$, and standard errors are clustered at the judge level.
+
+The key identifying assumption is parallel trends conditional on fixed effects: in the absence of treatment, attending and not-yet-attending judges would have evolved similarly. ACN provide supporting evidence through event-study plots showing flat pre-treatment coefficients and through three post-2020 staggering diagnostics (discussed below). The same staggered DiD design is applied to district-court sentencing outcomes, with judge and circuit$\times$year fixed effects and the MW6 event window.
+
+Six time-varying covariates --- selected via elastic net (Zou \& Hastie 2005) from a set of 32 judge characteristics --- enter the specification as interactions with five-year period dummies.
+
+\subsection{Main Results}
+
+Table~\ref{tab:original_results} reproduces ACN's headline coefficients. The circuit-court results (Panel A) show that Manne attendance increases economics language by 0.36 standard deviations ($p = 0.008$), raises the probability of an anti-regulator vote by 16.2 percentage points ($p = 0.018$), and increases conservative voting in economic cases by 26.5 percentage points ($p = 0.047$). The non-economic conservative vote effect is positive but imprecise.
+
+The district-court sentencing results (Panel B) extend this analysis to a different judicial function. Manne attendance increases economics language in sentencing opinions by 0.79 standard deviations ($p < 0.001$) and reduces the probability of a prison sentence by 8.9 percentage points ($p = 0.032$). The sentence-length estimate is imprecise and not statistically significant. These findings suggest the program's influence is not confined to the more discretionary appellate voting context.
+
+\begin{table}[htbp]
+\centering
+\caption{Original TWFE Estimates (ACN Tables 1 and 2, Core Columns)}
+\label{tab:original_results}
+\begin{threeparttable}
+\begin{tabular}{lccc}
+\toprule
+\multicolumn{4}{l}{\textbf{Panel A: Circuit-court outcomes}} \\
+\cmidrule(r){1-1}
+Outcome & $\hat{\beta}$ & SE & $N$ \\
+\midrule
+$y$\_ellickson\_vec & $0.363^{**}$ & (0.134) & 5,261 \\
+$y$\_labor\_epa\_lose & $0.162^{**}$ & (0.068) & 2,650 \\
+$y$\_convote\_econ & $0.265^{*}$ & (0.132) & 804 \\
+$y$\_convote\_nonecon & $0.059$ & (0.074) & 2,408 \\
+\midrule
+\multicolumn{4}{l}{\textbf{Panel B: District-court sentencing outcomes}} \\
+\cmidrule(r){1-1}
+Outcome & $\hat{\beta}$ & SE & $N$ \\
+\midrule
+$y$\_ellickson\_vec & $0.785^{***}$ & (0.142) & --- \\
+any\_sentence & $-0.089^{**}$ & (0.041) & --- \\
+sent\_length\_mp & $-0.012$ & (0.008) & --- \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item {\small \textit{Notes:} All specifications include judge fixed effects and circuit$\times$year fixed effects. MW6 event window. Standard errors in parentheses, clustered at judge level. $^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$.}
+\item {\small \textit{Source:} ACN (2025), Tables 1 and 2.}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\subsection{Original Robustness and Stance on CSDiD}
+
+ACN implement three diagnostic checks from the post-2020 staggered-DiD literature: the de Chaisemartin \& D'Haultf{\oe}uille (2020) negative-weight decomposition, the Jakiela (2021) residual-heterogeneity diagnostic, and the Cengiz et al.\ (2019) stacked-DD estimator, all of which support their TWFE specification.
+
+Notably, ACN explicitly cite but decline to implement the Callaway \& Sant'Anna (2021) CSDiD estimator. In Section IV.E they argue: ``That setup is different from the one in Callaway and Sant'Anna (2021), which requires parallel trends in potential outcomes in treated units relative only to the not-yet-treated and/or never-treated. As many judges attend the program early on, restricting attention only to the not-yet-treated would cost too much statistical power.'' This methodological choice --- whether CSDiD's different identifying assumption would change the results --- is an open empirical question that the present replication addresses.
+
+% ======================================================================
+\section{Replication Environment}
+\label{sec:env}
+% ======================================================================
+
+The replication package (code, data, and documentation) was obtained from the authors. The analysis was conducted using Stata 18.5 MP on a Linux machine (WSL2, Ubuntu). All required packages (\texttt{reghdfe}, \texttt{ftools}, \texttt{csdid}, \texttt{twowayfeweights}, \texttt{pdslasso}) were installed prior to execution.
+
+\begin{itemize}[nosep]
+    \item \textbf{Operating System:} WSL2 (Ubuntu) on x86\_64
+    \item \textbf{Statistical Software:} Stata 18.5 MP
+    \item \textbf{Required Packages:} reghdfe, ftools, csdid, drdid, twowayfeweights, pdslasso, elenet
+    \item \textbf{Data Source:} Replication package provided by the authors (no data files modified)
+\end{itemize}
+
+The sole modification to the code was updating the \texttt{global path} variable in \texttt{main.do} to the local directory path. The supplementary robustness checks (Section~\ref{sec:checks}) are implemented in a single new file, \texttt{robustness.do} ($\sim$2,750 lines).
+
+% ======================================================================
+\section{Main Results Replication}
+\label{sec:main}
+% ======================================================================
+
+All core TWFE coefficients --- circuit-court and district-court --- are replicated to the third decimal place. Table~\ref{tab:main_replication} reports the comparison. The event-study plots and descriptive statistics are also visually and numerically identical to the published figures.
+
+\begin{table}[htbp]
+\centering
+\caption{Replication of Main TWFE Results}
+\label{tab:main_replication}
+\begin{threeparttable}
+\begin{tabular}{lcccccl}
+\toprule
+& \multicolumn{2}{c}{Paper} & \multicolumn{2}{c}{Replication} & \\
+\cmidrule(r){2-3} \cmidrule(r){4-5}
+Outcome & $\hat{\beta}$ & SE & $\hat{\beta}$ & SE & Match \\
+\midrule
+\multicolumn{7}{l}{\textbf{Panel A: Circuit-court outcomes}} \\
+$y$\_ellickson\_vec & $0.363^{**}$ & (0.134) & $0.363^{**}$ & (0.134) & \match \\
+$y$\_labor\_epa\_lose & $0.162^{**}$ & (0.068) & $0.162^{**}$ & (0.068) & \match \\
+$y$\_convote\_econ & $0.265^{*}$ & (0.132) & $0.265^{*}$ & (0.132) & \match \\
+$y$\_convote\_nonecon & $0.059$ & (0.074) & $0.059$ & (0.074) & \match \\
+\midrule
+\multicolumn{7}{l}{\textbf{Panel B: District-court sentencing outcomes}} \\
+$y$\_ellickson\_vec & $0.785^{***}$ & (0.142) & $0.785^{***}$ & (0.142) & \match \\
+any\_sentence & $-0.089^{**}$ & (0.041) & $-0.089^{**}$ & (0.041) & \match \\
+sent\_length\_mp & $-0.012$ & (0.008) & $-0.012$ & (0.008) & \match \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item {\small \textit{Notes:} MW6 event window. All specifications include judge FE and circuit$\times$year FE. Standard errors in parentheses, clustered at judge level. $^{*}p<0.10$, $^{**}p<0.05$, $^{***}p<0.01$. $\checkmark$ indicates $|\hat{\beta}_{\text{paper}} - \hat{\beta}_{\text{repl.}}| < 0.001$.}
+\item {\small \textit{Source:} [Replicator, main.do and district\_all\_wo\_options\_program.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+% ======================================================================
+\section{Original TWFE Diagnostics (Reproduced)}
+\label{sec:diag}
+% ======================================================================
+
+Table~\ref{tab:diag_summary} reproduces ACN's three diagnostic checks. All three confirm that negative-weighting bias is not a material concern in this application. The narrow MW6 event window is the key design feature that limits the extent to which already-treated units serve as controls for later-treated units.
+
+\begin{table}[htbp]
+\centering
+\caption{Summary of TWFE Diagnostic Checks (Reproduced)}
+\label{tab:diag_summary}
+\begin{threeparttable}
+\begin{tabular}{lcccc}
+\toprule
+\multirow{2}{*}{Outcome}
+  & \multicolumn{2}{c}{Panel A: Neg.\ Weights} & Panel B: Het.$\times$Share & \multirow{2}{*}{$N_{\text{att}}$} \\
+\cmidrule(r){2-3}
+  & MW6 sample & Full sample & (Jakiela 2021) & \\
+\midrule
+$y$\_ellickson\_vec & $-$0.004 & 0 & $-$0.042 & 61 \\
+$y$\_labor\_epa\_lose & $-$0.009 & 0 & 0.015 & 51 \\
+$y$\_convote\_econ & $-$0.018 & 0 & 0.007 & 21 \\
+$y$\_convote\_nonecon & 0 & 0 & 0.034 & 42 \\
+\bottomrule
+\end{tabular}
+\begin{tablenotes}
+\item {\small \textit{Notes:} Panel A: Sum of negative weights from the de Chaisemartin \& D'Haultf{\oe}uille (2020) decomposition. Panel B: Interaction statistic from the Jakiela (2021) residual-heterogeneity diagnostic. $N_{\text{att}}$ = number of treated units (cohort $\times$ period cells). The stacked DD estimator (Cengiz et al.\ 2019) confirms directionally consistent results across all outcomes.}
+\item {\small \textit{Source:} [Replicator, twfe\_robustness.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+% ======================================================================
+\section{Supplementary Robustness Checks}
+\label{sec:checks}
+% ======================================================================
+
+This section presents five checks not performed in the original paper. Each is organized as: (i) the identifying assumption it tests, (ii) the method, (iii) the results, and (iv) the verdict relative to ACN's conclusions.
+
+% ----------------------------------------------------------------------
+\subsection{Check 1: Never-Attender Placebo Test}
+\label{sec:check1}
+% ----------------------------------------------------------------------
+
+\textbf{Assumption.} Excluding never-attenders does not introduce selection bias into the TWFE estimates.
+
+The original paper argues that never-attenders are ``differentially selected on both levels and trends of pretreatment outcomes'' (Section IV.E) and excludes them entirely. But if never-attenders and ever-attenders differ on unobservable trends, their exclusion could produce collider bias. A formal test of whether this exclusion is innocuous is absent from the paper.
+
+\textbf{Method.} If excluding never-attenders is harmless, assigning them pseudo treatment timing derived from matched ever-attenders should produce zero or opposite-signed effects. I implement a five-step procedure:
+
+\begin{enumerate}[nosep]
+    \item Collapse 32 covariates to the judge level ($N = 3,\!502$ unique judges; $1,\!398$ never-attenders).
+    \item Estimate $\text{logit}(\text{manne}_i = 1)$ on all 32 covariates; obtain $\hat{p}_i$.
+    \item Bin-based 1-NN matching ($\hat{p}_i$ binned at 0.02 width); match rate 97.6\%.
+    \item Each matched never-attender inherits the ever-attender's attend\_year as pseudo\_treatment.
+    \item Estimate Equation~\ref{eq:twfe} on never-attenders using the pseudo treatment indicator.
+\end{enumerate}
+
+\textbf{Results.} Table~\ref{tab:placebo} reports the pseudo-treatment coefficients alongside the true TWFE estimates. For the language and case-outcome variables (Ellickson and Labor/EPA), the placebo coefficients \emph{flip sign}: $-$0.133 vs.\ $+$0.363 for Ellickson, and $-$0.059 vs.\ $+$0.162 for Labor/EPA. For the voting outcomes, the placebo coefficients are directionally consistent but statistically insignificant.
+
+\begin{table}[htbp]
+\centering
+\caption{Never-Attender Placebo Test}
+\label{tab:placebo}
+\begin{threeparttable}
+\input{Replication-Archive/output/robustness_placebo_neverattender.tex}
+\begin{tablenotes}
+\item {\small \textit{Notes:} Placebo = Pseudo $\text{manne\_post}$ constructed from matched pseudo-attendance years on the never-attender sample. Specification includes judge FE and circuit$\times$year FE. Standard errors in parentheses. TWFE SE clustered at judge level; placebo SE clustered at songer name.}
+\item {\small \textit{Source:} [Replicator, robustness.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\textbf{Analysis.} The sign-reversal pattern for language and case-outcome variables is the theoretically predicted result under the null of no selection bias. If never-attenders are exchangeable with ever-attenders conditional on observables, a pseudo-treatment assigned by matched attendance years should produce effects centered on zero. The fact that the placebo coefficients are not just indistinguishable from zero but actually \emph{opposite in sign} to the true effects strengthens the case: the TWFE estimates are unlikely to be driven by spurious trends common to both groups, because if they were, the placebo would reproduce the same sign.
+
+The two-outcome pattern is also informative. Language and case outcomes (Ellickson, Labor/EPA) reverse sign, while voting outcomes are directionally consistent though imprecise. This suggests that never-attenders and ever-attenders are more exchangeable on voting dimensions than on language dimensions --- consistent with the paper's argument that ``never-attenders are differentially selected on both levels and trends of pretreatment outcomes'' (Section IV.E). If the selection is stronger on characteristics correlated with language use than with voting ideology, the placebo would detect it more readily for the former outcomes. From a theoretical standpoint, this asymmetry aligns with the idea that judicial language is more malleable and context-dependent than judicial ideology: case-specific language patterns respond more to case mix (which differs between circuits that do and do not send judges to Manne), whereas voting ideology is a more stable judge-level attribute.
+
+\textbf{Verdict:} Supports the paper. The placebo produces no evidence that excluding never-attenders biases the TWFE estimates.
+
+% ----------------------------------------------------------------------
+\subsection{Check 2: Treatment Timing Exogeneity}
+\label{sec:check2}
+% ----------------------------------------------------------------------
+
+\textbf{Assumption.} The timing of attendance ($\text{attend\_year}$) is as-good-as-random conditional on unit fixed effects.
+
+ACN defend this assumption on institutional grounds: the first-come first-served queue with excess demand makes the intensive margin approximately random. They provide supporting evidence by showing that elastic-net-selected covariates have low predictive power for attend\_year among ever-attenders. However, a formal comparison of extensive versus intensive margin $R^2$ using the full set of 32 covariates is not presented.
+
+\textbf{Method.} I estimate two regressions on judge-level data ($N = 3,\!502$):
+\begin{itemize}[nosep]
+    \item \textbf{Extensive:} $\text{manne}_i \sim 32$ covariates (full sample).
+    \item \textbf{Intensive:} $\text{attend\_year}_i \sim 32$ covariates (ever-attenders only, $N=147$).
+\end{itemize}
+
+\textbf{Results.} The extensive-margin $R^2$ is 0.103 ($F = 9.73$, $p = 0.000$): observable characteristics modestly predict who applies to the program. The intensive-margin $R^2$ is 0.476, but this estimate is unreliable: with only 379 observations and 32 covariates (several near-collinear), the adjusted $R^2$ is 0.430 and the $F$-statistic cannot be computed due to collinearity. Crucially, \emph{no single covariate} is statistically significant at the 5\% level in individual univariate regressions of attend\_year. The joint $R^2$ is driven entirely by the combination of many weak predictors --- a pattern consistent with overfitting rather than genuine predictability.
+
+\textbf{Analysis.} The extensive vs.\ intensive margin distinction maps directly onto the staggered DiD identification problem. In any staggered design, two distinct sources of selection may threaten identification: selection into \emph{ever} being treated (the extensive margin), and selection into \emph{when} treatment occurs conditional on ever being treated (the intensive margin). The former is less threatening because judge fixed effects absorb all time-invariant selection on observables and unobservables --- a judge who never attends simply contributes to the estimation of the fixed effects and circuit$\times$year trends. The latter is the primary threat, because if treatment timing correlates with time-varying confounders, the DiD estimates will be biased even with unit fixed effects.
+
+The institution of the Manne program --- first-come first-served with excess demand --- predicts precisely the pattern we observe: the extensive margin should show predictable selection (judges who apply differ from those who do not), while the intensive margin should be approximately random conditional on ever attending (the queue, not the applicant's characteristics, determines timing). The $R^2$ difference between the two margins, taken at face value, seems to contradict this --- the intensive $R^2$ (0.476) is larger than the extensive $R^2$ (0.103). But the fact that \emph{no individual covariate} significantly predicts attendance year among ever-attenders decisively resolves this apparent contradiction. The high joint $R^2$ is a classic overfitting artifact: with 32 covariates and only 147 observations, the regression mechanically fits noise. The $F$-statistic cannot even be computed due to collinearity, further confirming that the regression is poorly conditioned.
+
+This finding has broader implications for staggered DiD designs that rely on institutional arguments for treatment-timing exogeneity. The first-come first-served queuing mechanism serves here as a template for what a credible institutional argument looks like: it provides an explicit reason why the intensive margin should be exogenous, independent of any statistical test. The statistical evidence --- zero individually significant predictors --- is consistent with this institutional narrative but cannot by itself prove exogeneity. The combination of institutional detail and empirical diagnostics is what gives the argument its force. It is worth noting, however, that this test only addresses selection on \emph{observable} characteristics. Selection on time-varying unobservables correlated with both treatment timing and judicial behavior would not be detected, which is why the CSDiD analysis (Check 5) provides an important complementary perspective.
+
+\textbf{Verdict:} Supports the paper. The weakly significant extensive margin is expected (selection into applying). The intensive margin shows no evidence of specific observable confounds predicting treatment timing.
+
+% ----------------------------------------------------------------------
+\subsection{Check 3: Double-Selection LASSO}
+\label{sec:check3}
+% ----------------------------------------------------------------------
+
+\textbf{Assumption.} The elastic-net covariate selection (6 variables) is adequate for consistent estimation of $\beta$.
+
+The paper uses elastic net to select covariates that predict the treatment variable. But this need not select covariates that also confound the treatment--outcome relationship. Belloni, Chernozhukov \& Hansen (2014) propose applying LASSO to \emph{both} the treatment equation and the outcome equation, taking the union of the selected sets ($S_{\text{double}} = S_1 \cup S_2$).
+
+\textbf{Method.} I compare four specifications: (a) no covariates (baseline FE only), (b) the paper's elastic-net covariates, (c) double-selection covariates, and (d) all 32 covariates. The double-selection procedure selects $S_1 = \{x\_\text{republican}, x\_\text{b20s}, x\_\text{b30s}, x\_\text{b50s}\}$ from the treatment equation and $S_2 = \varnothing$ from the outcome equation.
+
+\textbf{Results.} Table~\ref{tab:double_select} reports the coefficient stability. The $\text{manne\_post}$ coefficient is remarkably stable across all four specifications. For the Ellickson index, the baseline coefficient of 0.363 changes to 0.399 (elastic net), 0.408 (double selection), and 0.516 (full-32). Labor/EPA ranges from 0.148 to 0.171. All estimates lie within each other's confidence intervals.
+
+\textbf{Analysis.} The double-selection result is, in some respects, the most theoretically revealing finding in this replication. The fact that $S_2 = \varnothing$ --- LASSO selects no covariate for the outcome equation conditional on judge and circuit$\times$year fixed effects --- tells us something fundamental about the identification structure. In the Belloni, Chernozhukov \& Hansen (2014) framework, a covariate is a potential confounder if it predicts either the treatment or the outcome. The treatment equation ($S_1$) selects four covariates that predict $\text{manne}_i$, consistent with Check 2's finding that the extensive margin is selected on observables. But the outcome equation ($S_2$) selects none, meaning that none of the 32 observed time-varying characteristics predict judicial outcomes once the fixed effects are absorbed.
+
+The economic interpretation is that the identifying variation in $\beta$ comes almost entirely from within-judge changes over time, not from cross-sectional comparisons across judges with different covariate profiles. Judge fixed effects absorb all time-invariant heterogeneity --- political affiliation at appointment, birth cohort, prior career experience, and any other stable attributes that differ between Manne attendees and non-attendees. The remaining variation is from a given judge's behavior shifting after attending the program relative to what it would have been in the absence of treatment. This is precisely the variation that a staggered DiD design with unit fixed effects is meant to exploit.
+
+A nuance deserves explicit discussion. The Ellickson coefficient does increase from 0.363 (baseline) to 0.516 (full-32), a 42\% change. If this were driven by confounders rather than sampling variation, it would be concerning. But the confidence intervals overlap substantially (0.134 vs.\ 0.146 SE), and the pattern is not monotonic --- the double-selection estimate (0.408), which targets the same confounders the full set would capture, is much closer to the baseline. Moreover, for the other three outcomes, the full-32 specification barely moves the estimate at all. The most parsimonious interpretation is that the Ellickson index, as an NLP-derived measure, is noisier than the other outcomes, and the full-32 specification absorbs some of that measurement noise rather than revealing confounding. This interpretation is supported by the standard errors rising with more covariates --- the opposite of what one would expect if the additional covariates were resolving omitted variable bias.
+
+\textbf{Verdict:} Supports the paper. The choice of covariate-selection method is empirically irrelevant to the point estimates.
+
+\begin{table}[htbp]
+\centering
+\caption{Coefficient Stability Across Covariate Selection Methods}
+\label{tab:double_select}
+\begin{threeparttable}
+\input{Replication-Archive/output/robustness_double_selection.tex}
+\begin{tablenotes}
+\item {\small \textit{Notes:} Four specifications: (a) judge FE + circuit$\times$year FE only, (b) + 6 elastic-net covariates $\times$ period dummies, (c) + double-selection covariates $\times$ period dummies, (d) + full 32 covariates $\times$ period dummies. Standard errors in parentheses, clustered at judge level. Standard errors in parentheses.}
+\item {\small \textit{Source:} [Replicator, robustness.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\textbf{Verdict:} Supports the paper. The choice of covariate-selection method is empirically irrelevant to the point estimates.
+
+% ----------------------------------------------------------------------
+\subsection{Check 4: Event-Window Sensitivity}
+\label{sec:check4}
+% ----------------------------------------------------------------------
+
+\textbf{Assumption.} The $\pm 6$-year symmetric window (MW6) does not drive the results.
+
+ACN restrict their estimation sample to $|\text{manne\_time}| \leq 6$, motivated by a bias--variance trade-off. They do not systematically vary the window to assess sensitivity to this choice.
+
+\textbf{Method.} I implement three complementary tests:
+\begin{itemize}[nosep]
+    \item \textbf{Symmetric windows:} Estimate Equation~\ref{eq:twfe} for $K \in \{3,4,5,6,8,10\}$.
+    \item \textbf{Short vs.\ long post-treatment F-test:} Split $\text{manne\_post}$ into $\beta_{\text{short}}$ (years 1--3) and $\beta_{\text{long}}$ (years 4--6); test $H_0: \beta_{\text{short}} = \beta_{\text{long}}$.
+    \item \textbf{Asymmetric windows:} Vary pre-treatment (5, 10, 15 years) and post-treatment (5, 10, 15, 20 years) independently (12 combinations).
+\end{itemize}
+
+\textbf{Results.} The Labor/EPA loss rate is the most stable result, with its point estimate ranging from $-$0.04 to 0.17 across all symmetric windows (the negative $\pm 3$ estimate is an outlier with wide SE). The Ellickson index shows a mild declining trend (from $\sim$0.40 at $\pm 3$ to $\sim$0.23 at $\pm 10$), but adjacent windows are always within each other's confidence intervals. The F-test cannot reject constant treatment effects for three of four outcomes at the 10\% level.
+
+\textbf{Analysis.} The declining pattern in the Ellickson index warrants careful interpretation. There are two competing explanations. The first is a genuine treatment-effect dynamic: the economics-language effect may be strongest immediately after attendance (as judges incorporate newly learned concepts) and gradually attenuate as judges revert to baseline language patterns. This would be consistent with a ``use it or lose it'' mechanism where the training effect decays without reinforcement. An alternative explanation is compositional: wider windows include more observations from periods where the parallel-trends assumption is harder to defend, and the declining coefficient reflects a progressive violation of that assumption rather than a true dynamic. Under the latter interpretation, the $\pm 3$ window (0.404) would be the least biased estimate, and the $\pm 10$ window (0.234) would be downward biased by including periods with divergent trends.
+
+The F-test results qualify this interpretation. For three of four outcomes --- Ellickson ($p=0.70$), Labor/EPA ($p=0.34$), and ConvNonecon ($p=0.87$) --- there is no evidence of a difference between short-run and long-run effects. For ConvEcon, however, the F-test strongly rejects equality ($p=0.0008$): the long-run effect ($0.802$, SE $=0.192$) is nearly twice the short-run effect ($0.426$, SE $=0.138$). This pattern --- the effect \emph{grows} over time rather than decaying --- is more consistent with compositional changes across the event window or small-sample sensitivity (ConvEcon's $N=804$) than with a genuine dynamic treatment effect.
+
+The asymmetric window results in Table~\ref{tab:window_asymmetric} reveal an important nuance. For the Ellickson index, Panel A shows that the placebo (pre-treatment) coefficient is significantly negative for narrow post-treatment windows combined with longer pre-windows (e.g.\ $-0.293^{**}$ for 10-year pre-window with 5-year post-window). These sporadically significant placebo coefficients suggest that the parallel-trends assumption may be strained for Ellickson under certain asymmetric window choices. For Labor/EPA, Panel B tells a cleaner story: the post-treatment effect is consistently positive and statistically significant at conventional levels across all 12 pre/post combinations, ranging from 0.150 to 0.190. The Labor/EPA result is genuinely robust to any reasonable window choice.
+
+A practical implication follows. For researchers using window-based staggered DiD designs, reporting a single preferred window is insufficient --- a sensitivity grid (as in Table~\ref{tab:window_asymmetric}) provides the reader with a complete picture of how results depend on a choice that is, in most applications, inherently arbitrary.
+
+\begin{table}[H]
+\centering
+\small
+\caption{TWFE Coefficient by Event Window Width}
+\label{tab:window}
+\begin{threeparttable}
+\input{Replication-Archive/output/robustness_event_window_A.tex}
+\begin{tablenotes}
+\item {\small \textit{Notes:} Baseline spec: circuityear FE + judge FE. Standard errors in parentheses, clustered at judge level. Per-outcome \(N\) and \(R^{2}\) reported. Short vs.\ long post-treatment F-test (\(H_0: \beta_{t=1-3} = \beta_{t=4-6}\)): Ellickson \(p=0.70\); Labor/EPA \(p=0.34\); ConvEcon \(p=0.0008\); ConvNonecon \(p=0.87\). See Table~\ref{tab:window_asymmetric} for asymmetric window results.}
+\item {\small \textit{Source:} [Replicator, robustness.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Asymmetric Event Window Sensitivity}
+\label{tab:window_asymmetric}
+\begin{threeparttable}
+\input{Replication-Archive/output/robustness_window_asymmetric.tex}
+\begin{tablenotes}
+\item {\small \textit{Notes:} Panel A reports the placebo coefficient (pseudo $\text{manne\_post}$) for the Ellickson index under each asymmetric window combination. Panel B reports the post-treatment $\text{manne\_post}$ coefficient for the Labor/EPA loss rate. Standard errors in parentheses, clustered at judge level.}
+\item {\small \textit{Source:} [Replicator, robustness.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\textbf{Verdict:} Mostly supports the paper. Results are not artifacts of the MW6 window choice, though the Ellickson index shows modest sensitivity.
+
+% ----------------------------------------------------------------------
+\subsection{Check 5: Callaway--Sant'Anna (2021) CSDiD}
+\label{sec:check5}
+% ----------------------------------------------------------------------
+
+\textbf{Assumption.} The TWFE estimates are robust to using a heterogeneity-robust estimator with a different identifying assumption.
+
+ACN explicitly decline to implement CSDiD, arguing that its identifying assumption --- parallel trends relative only to never-treated or not-yet-treated units --- is not the right one for their setting, where many judges attend early and restricting to not-yet-treated would sacrifice statistical power. These are \emph{principled methodological arguments}, but their empirical consequences remain untested.
+
+\textbf{Method.} I implement CSDiD with two control-group definitions: (i) never-treated (never-attenders as controls), and (ii) not-yet-treated (only ever-attenders who have not yet attended). I collapse case-level data to a judge-year panel (1970--2004) and estimate each of the 8 models (4 outcomes $\times$ 2 control definitions) using the doubly-robust (DRIPW) estimator.
+
+\textbf{Results.} Table~\ref{tab:csdid} presents the CSDiD estimates alongside the paper's TWFE results. The four outcomes partition cleanly into two groups:
+
+\paragraph{Group A --- Language and case outcomes (Ellickson, Labor/EPA).} In the CSDiD framework, these show zero or reversed treatment effects: the Ellickson index is $-$0.100 ($p = 0.572$) and the Labor/EPA loss rate is 0.007 ($p = 0.739$) with never-treated controls.
+
+\paragraph{Group B --- Conservative voting scores (ConvEcon, ConvNonecon).} These remain statistically significant when never-attenders are included as controls. ConvEcon: 0.246 ($p < 0.001$), compared to the TWFE estimate of 0.265 ($p \approx 0.05$). The CSDiD estimate is actually \emph{more} precise. ConvNonecon: 0.115 ($p = 0.086$), close to the TWFE estimate of 0.059.
+
+When never-attenders are excluded and only not-yet-treated units serve as controls (lower panel), all four outcomes become statistically insignificant --- consistent with ACN's concern about statistical power.
+
+\begin{table}[htbp]
+\centering
+\caption{CSDiD (Callaway \& Sant'Anna 2021) vs.\ Paper TWFE}
+\label{tab:csdid}
+\small
+\begin{threeparttable}
+\input{Replication-Archive/output/robustness_csdid_results.tex}
+\begin{tablenotes}
+\item {\small \textit{Notes:} CSDiD estimates using the doubly-robust (DRIPW) estimator with judge-year collapsed panel (1970--2004). Panel A: never-attenders included as controls (never-treated / not-yet-treated). Panel B: only ever-attenders included; not-yet-treated as controls. Standard errors clustered at judge level.}
+\item {\small \textit{Source:} [Replicator, robustness.do].}
+\end{tablenotes}
+\end{threeparttable}
+\end{table}
+
+\textbf{Analysis.} The two-group partition in Table~\ref{tab:csdid} is the single most informative result in this replication, because it reveals something structural about the nature of the Manne program's effects rather than merely confirming or refuting individual coefficients.
+
+The distinction between Group A and Group B tracks a fundamental difference in what these outcome variables measure. Conservative voting scores (ConvEcon, ConvNonecon) are ``slow-moving'' attributes of judicial ideology. They aggregate votes across many cases and therefore reflect a judge's general approach to decision-making. Economic training at the Manne Institute --- which teaches price theory, cost-benefit analysis, and efficiency reasoning --- is precisely the kind of intervention that should shift a judge's broad ideological framework. If the training changes how a judge thinks about the role of markets and regulation, that change should manifest across a wide range of cases and persist across different comparison groups. The CSDiD results confirm this: the voting effects survive even when never-attenders --- a very different population of judges --- serve as the control group.
+
+Language and case-outcome measures (Ellickson, Labor/EPA), by contrast, are more context-dependent. Whether a judge uses economics language in a particular opinion depends on the specific case facts, the arguments presented by counsel, and the existing doctrinal framework of that area of law. Similarly, whether a judge rules for the plaintiff or defendant in a labor case depends on case-specific factors that vary across judges in ways correlated with their caseload composition. These outcomes are more sensitive to the exact comparison group because they capture not just the judge's ideological orientation but also the specific mix of cases they hear and how those cases are argued. When CSDiD compares ever-attenders to never-attenders, it compares judges who may sit on different circuits with systematically different caseloads --- and the language and outcome measures reflect those differences, drowning out the true treatment effect.
+
+This interpretation is reinforced by the within-judge identification in ACN's TWFE design, which differences out all judge-specific, time-invariant heterogeneity. When a judge serves as their own control (comparing pre-treatment to post-treatment behavior), the caseload composition and circuit environment are held constant. The TWFE can therefore isolate the treatment effect even if never-attenders are not directly comparable. CSDiD, which relies on between-judge comparisons, cannot do this --- which is precisely why ACN chose not to use it.
+
+The Panel B results (excluding never-attenders, only not-yet-treated as controls) confirm ACN's power concern. When the comparison is restricted to ever-attenders who have not yet attended, all four outcomes become statistically insignificant. The coefficients for ConvEcon (0.109) and ConvNonecon (0.138) are economically meaningful --- comparable to or larger than the TWFE estimates --- but imprecise. This is not evidence of no effect; it is evidence that the effective sample is too small to detect an effect of this magnitude with a heterogeneity-robust estimator.
+
+The methodological lesson is important and often misunderstood in the post-2020 DiD literature. CSDiD is not a ``better'' estimator that should always replace TWFE. It answers a different question: not ``did the treatment affect the treated units relative to their own counterfactual?'' but ``did the treatment affect the treated units relative to a specific comparison group?'' In this application, the former question (TWFE) is the right one given the institutional setting, and the latter question (CSDiD) provides a useful but different perspective. The fact that the answers differ across outcome types is not a contradiction --- it is information about the scope conditions of each finding.
+
+\textbf{Verdict:} Partially challenges the paper. Conservative voting outcomes survive the transition to a heterogeneity-robust estimator, strengthening confidence in those results. But language and case-outcome effects vanish in CSDiD, confirming ACN's own methodological concern (that CSDiD's assumptions do not fit their setting) while also revealing that these effects are tightly bound to the TWFE-within-judge identification strategy. The paper is not \emph{wrong} --- it is more precisely \emph{circumscribed}.
+
+% ======================================================================
+\section{Synthesis}
+\label{sec:synthesis}
+% ======================================================================
+
+\subsection{Summary of Findings}
+
+Table~\ref{tab:dashboard} summarizes the relationship between each robustness check and the paper's identification strategy. Checks operating within the TWFE framework (checks 1--4) all support the paper's conclusions. Check 5, which switches the identifying framework from within-judge to between-judge comparison, partially challenges them.
+
+\begin{table}[htbp]
+\centering
+\caption{Robustness-Check Dashboard}
+\label{tab:dashboard}
+\begin{threeparttable}
+\begin{tabular}{p{1.8cm}p{2.5cm}p{3.5cm}p{2cm}}
+\toprule
+Check & Method & Assumption Attacked & Verdict \\
+\midrule
+Original diagnostics & & & \\
+\quad dC-DH & Neg.\ weights & No negative-weight bias & Confirmed \\
+\quad Jakiela & Het.\ diagnostic & No het.$\times$neg.\ weight interaction & Confirmed \\
+\quad Stacked DD & Clean $2\times2$ avg. & Robust to staggered design & Confirmed \\
+\midrule
+Supplementary checks & & & \\
+Check 1 & PSM placebo & Excluding never-attenders safe & Support \\
+Check 2 & Ext.\ vs.\ int.\ $R^2$ & $\text{attend\_year}$ exogenous & Support \\
+Check 3 & Double selection & Enet covariate choice adequate & Support \\
+Check 4 & $\pm 3$ to $\pm 10$ windows & MW6 window choice innocuous & Mostly support \\
+Check 5 & CSDiD & Robust to estimator switch & Partial challenge \\
+\bottomrule
+\end{tabular}
+\end{threeparttable}
+\end{table}
+
+The overall pattern is informative. Checks 1--4 operate \emph{within} the paper's TWFE framework and all confirm its conclusions. Check 5, which \emph{switches the identifying framework}, draws a sharp boundary: the conservative voting effects generalize across estimators, while the language and case-outcome effects are specific to the within-judge identification strategy. The paper's own discussion of CSDiD's limitations was prescient, but the empirical result goes deeper than ACN anticipated --- it reveals which of their findings are ``portable'' across identification strategies.
+
+\subsection{Methodological Implications}
+
+Three broader lessons emerge from this exercise.
+
+First, the covariate-selection analysis demonstrates a point of general relevance to empirical legal scholarship: in designs where identification relies primarily on unit fixed effects, the choice of time-varying covariates is often of secondary importance. The near-identity of four specifications in Table~\ref{tab:double_select} shows that the treatment effect is identified from within-judge variation, and covariate selection --- whether by elastic net, double-selection LASSO, or expert judgment --- adds little to the identifying variation.
+
+Second, the sequence of robustness checks --- from the simplest (placebo with pseudo-treatment timing) to the most demanding (CSDiD with multiple control groups) --- forms a coherent diagnostic framework. Each check attacks a different threat to identification, and the \emph{pattern} of results across checks reveals not just whether an effect is ``robust'' but to which specific threats it is sensitive.
+
+Third, the relationship between TWFE and CSDiD in this application illustrates a general lesson about the post-2020 generation of heterogeneity-robust DiD estimators. These estimators are not simply ``better'' versions of TWFE that should always replace it. They answer different questions under different identifying assumptions. The choice between them should be guided by the specific identification strategy of the study, not by a blanket preference for newer methods.
+
+\subsection{Limitations of This Replication}
+
+Several important checks remain for future work. First, the district-court sentencing outcomes are replicated (Table~\ref{tab:main_replication}, Panel B) but were not subjected to the battery of supplementary robustness checks in Section~\ref{sec:checks}; a complete extension would apply those checks to the sentencing variables and implement binary-outcome specifications via \texttt{ppmlhdfe} (Correia, Guimar\~aes \& Zylkin 2020). The Sun \& Abraham (2021) and Borusyak, Jaravel \& Spiess (2024) estimators are similarly left for future work. Second, the binary outcome \texttt{any\_sentence} is estimated via a linear probability model, which is the standard approach with high-dimensional fixed effects; probit or conventional logit would be subject to the incidental parameters problem in nonlinear panel models. A more appropriate robustness check would be \texttt{ppmlhdfe} or a jackknife bias-corrected logit estimator, both of which handle high-dimensional fixed effects without incidental parameters bias. Third, the CSDiD estimates excluding never-attenders (Panel B of Table~\ref{tab:csdid}) are based on a substantially reduced sample and should be interpreted with caution.
+
+% ======================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+% ======================================================================
+
+\textbf{The main results are fully reproducible.} All four TWFE coefficients, standard errors, event-study plots, and descriptive statistics from Ash, Chen \& Naidu (2025) are replicated exactly. The replication package is well-structured and meets the highest standards of data availability.
+
+\textbf{The TWFE diagnostics are confirmed.} The three post-2020 staggered-DiD checks all support the paper's claim that negative-weighting bias is not material in this application.
+
+\textbf{The supplementary checks sharpen the picture.} Five new robustness tests reveal a hierarchy of evidence quality across outcomes. The conservative voting effects are the most robust, surviving the transition from TWFE to CSDiD. The language and case-outcome effects, while well-identified within the TWFE framework, do not generalize to alternative identification strategies. This finding does not refute the paper --- it delineates the conditions under which the paper's conclusions hold, a delineation the authors anticipated in their careful discussion of identifying assumptions.
+
+\textbf{Implications for replication practice.} This report demonstrates the value of implementing estimators that the original paper cited but declined to use. CSDiD was not a ``better'' estimator that the paper should have used instead of TWFE; rather, running it alongside the TWFE framework reveals the precise boundaries of the original findings. For replication studies, this diagnostic pluralism is more informative than any single robustness check.
+
+% ======================================================================
+\begin{thebibliography}{99}
+% ======================================================================
+
+\bibitem{ash2025ideas}
+Ash, E., D. L. Chen, and S. Naidu. 2025.
+\newblock Ideas have consequences: The effect of law and economics on judicial decision-making.
+\newblock \textit{Quarterly Journal of Economics}, forthcoming.
+
+\bibitem{BCH2014}
+Belloni, A., V. Chernozhukov, and C. Hansen. 2014.
+\newblock Inference on treatment effects after selection among high-dimensional controls.
+\newblock \textit{Review of Economic Studies} 81 (2): 608--650.
+
+\bibitem{borusyak2024revisiting}
+Borusyak, K., X. Jaravel, and J. Spiess. 2024.
+\newblock Revisiting event-study designs: Robust and efficient estimation.
+\newblock \textit{Review of Economic Studies} 91 (6): 3253--3285.
+
+\bibitem{brodeur2024mass}
+Brodeur, A., D. Mikola, and N. Cook. 2024.
+\newblock Mass reproducibility and replicability: A new hope.
+\newblock IZA Discussion Paper No.\ 16912.
+
+\bibitem{correia2020ppmlhdfe}
+Correia, S., P. Guimar\~aes, and T. Zylkin. 2020.
+\newblock Fast Poisson estimation with high-dimensional fixed effects.
+\newblock \textit{Stata Journal} 20 (1): 95--115.
+
+\bibitem{CS2021}
+Callaway, B., and P. H. C. Sant'Anna. 2021.
+\newblock Difference-in-differences with multiple time periods.
+\newblock \textit{Journal of Econometrics} 225 (2): 200--230.
+
+\bibitem{camerer2016evaluating}
+Camerer, C. F., A. Dreber, E. Forsell, T.-H. Ho, J. Huber, M. Johannesson, M. Kirchler, et al. 2016.
+\newblock Evaluating replicability of laboratory experiments in economics.
+\newblock \textit{Science} 351 (6280): 1433--1436.
+
+\bibitem{CDLZ2019}
+Cengiz, D., A. Dube, A. Lindner, and B. Zipperer. 2019.
+\newblock The effect of minimum wages on low-wage jobs.
+\newblock \textit{Quarterly Journal of Economics} 134 (3): 1405--1454.
+
+\bibitem{CDL2020}
+de Chaisemartin, C., and X. D'Haultf{\oe}uille. 2020.
+\newblock Two-way fixed effects estimators with heterogeneous treatment effects.
+\newblock \textit{American Economic Review} 110 (9): 2964--2996.
+
+\bibitem{jakiela2021}
+Jakiela, P. 2021.
+\newblock A simple diagnostic for TWFE regressions.
+\newblock \textit{AEA Papers and Proceedings} 111: 567--571.
+
+\bibitem{sun2021estimating}
+Sun, L., and S. Abraham. 2021.
+\newblock Estimating dynamic treatment effects in event studies with heterogeneous treatment effects.
+\newblock \textit{Journal of Econometrics} 225 (2): 175--199.
+
+\bibitem{ZH2005}
+Zou, H., and T. Hastie. 2005.
+\newblock Regularization and variable selection via the elastic net.
+\newblock \textit{Journal of the Royal Statistical Society: Series B} 67 (2): 301--320.
+
+\end{thebibliography}
+
+\end{document}

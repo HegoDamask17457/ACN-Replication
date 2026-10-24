@@ -1,0 +1,198 @@
+*                                    s1color.scheme
+
+* s1 scheme family with a naturally white background and color 
+* foreground (lines, symbols, text, etc).  Very similar to s2 family, but has
+* no background shading and uses colors with more contrast (though perhaps 
+* less appealing).  Also uses grid lines for fewer graph families and the
+* symbol changes for each plot#.
+
+*  version 1.0.0
+
+#include s2color
+
+
+color             white
+color background  white
+color foreground  black
+* do NOT use "r g b" numbers for background and foreground"
+
+color symbol         black
+color backsymbol     gs8
+
+color text           black
+color body           black
+color heading        black
+color subheading     black
+color axis_title     black
+color matrix_label   black
+color label          black
+color key_label      black
+color tick_label     black
+color tick_biglabel  black
+
+color box            ltkhaki
+* color textbox        ltkhaki
+color textbox        gs15
+
+color mat_label_box  ltkhaki
+
+color filled_text        black
+color filled             ltkhaki
+color bylabel_outline    black
+
+yesno legend_force_nodraw    no
+yesno draw_major_grid        no
+yesno draw_minor_grid        no
+yesno draw_major_vgrid       no
+
+color grid         gs10
+color major_grid   white /*grid color*/
+color minor_grid   gs5
+
+anglestyle ylabels horizontal
+* special matrix_yaxis   "ylabels(#3 , angle(horizontal) axis(Y))"
+
+color mat_label_box  ltkhaki
+
+color ci_line        gs8
+color mat_label_box  ltkhaki
+color ci_arealine    gs14
+color ci_area        gs14
+color ci_symbol      gs8
+color ci2_line       khaki
+color ci2_arealine   ltkhaki
+color ci2_area       ltkhaki
+
+color matrix         navy    
+color refmarker      red
+color refmarkline    black
+color histogram      ltbluishgray
+color histback       ltbluishgray
+color histogram_line navy
+color dot_line       gs8
+color dot_arealine   gs8
+color dot_area       gs4
+
+color xyline         cranberry
+color refline        midgreen
+color dots           black
+
+color plotregion         white
+color plotregion_line    white
+color matrix_plotregion  white
+color matplotregion_line black
+color legend             white
+color legend_line        white
+
+color p1      dknavy
+color p2      cranberry
+color p3      green
+color p4      purple
+color p5      teal
+color p6      magenta
+color p7      midblue
+color p8      emerald
+color p9      cyan
+color p10     red
+color p11     lime
+color p12     brown
+color p13     purple
+color p14     olive_teal
+color p15     ltblue
+
+color pmarkback      white
+color pmarkbkfill    white
+
+* color p1markfill     light_xyz
+* color p2markfill     light_xyz
+* color p3markfill     light_xyz
+* color p4markfill     light_xyz
+* color p5markfill     light_xyz
+* color p6markfill     light_xyz
+* color p1markfill     none
+* color p2markfill     none
+* color p3markfill     none
+* color p4markfill     none
+* color p5markfill     none
+* color p6markfill     none
+* color p1mark         yellow
+* color p2mark         red
+* color p3mark         blue
+* color p#markfill   none
+* color p#           yellow
+* color p#line       yellow
+* color p#shade      yellow
+* color p#markback   yellow
+* color p#markbkfill yellow
+* color p#area       yellow
+* color plabel       white
+
+
+yesno mat_label_box          no
+yesno mat_label_as_textbox   no
+
+shadestyle plotregion none
+
+
+linestyle plotregion  foreground
+
+
+areastyle matrix_label        none
+
+linepattern p1lineplot  solid
+linepattern p2lineplot  solid
+linepattern p3lineplot  solid
+linepattern p4lineplot  longdash_dot
+linepattern p5lineplot  longdash
+linepattern p6lineplot  dash_dot
+linepattern p7lineplot  dot
+linepattern p8lineplot  shortdash_dot
+linepattern p9lineplot  tight_dot
+linepattern p10lineplot dash_dot_dot
+linepattern p11lineplot longdash_shortdash
+linepattern p12lineplot dash_3dot
+linepattern p13lineplot longdash_dot_dot
+linepattern p14lineplot shortdash_dot_dot
+linepattern p15lineplot longdash_3dot
+
+linecolor p1lineplot dknavy
+
+
+symbol p1     circle_hollow
+symbol p2     diamond_hollow
+symbol p3     triangle_hollow
+symbol p4     square_hollow
+symbol p5     x
+symbol p6     +
+symbol p7     diamond
+symbol p8     square
+symbol p9     triangle
+
+symbolsize p1 small
+symbolsize p2 small
+symbolsize p3 small
+symbolsize p4 small
+symbolsize p5 medium
+symbolsize p6 medium
+symbolsize p7 small
+symbolsize p8 small
+symbolsize p9 small
+symbolsize p10 small
+
+symbollinewidth p1 thick  
+symbollinewidth p2 vthin  
+symbollinewidth p3 vthin  
+symbollinewidth p4 vthin  
+symbollinewidth p5 vthin  
+symbollinewidth p6 vthin  
+symbollinewidth p7 vthin  
+
+
+linewidth p1	thin
+linewidth p2   thin
+linewidth p3   thin
+linewidth p4	thin
+linewidth p5	thin
+linewidth p6	thin
+
+

@@ -1,0 +1,9 @@
+outcome,spec,beta,natts,npos,nneg,sumwpos,sumwneg
+y_labor_epa_lose,mw6,.1833015372490273,51,49,2,1.0091274,-.0091273244
+y_labor_epa_lose,full,.1090990236978526,51,51,0,1,0
+y_convote_econ,mw6,.1782703198218529,21,19,2,1.0178972,-.017897155
+y_convote_econ,full,-.0812381215894608,20,20,0,1,0
+y_convote_nonecon,mw6,.0503603756047607,42,42,0,1,0
+y_convote_nonecon,full,-.0266867236652506,42,42,0,1,0
+y_ellickson_vec,mw6,.1105519687311897,61,60,1,1.004213,-.0042129355
+y_ellickson_vec,full,-.1013466411105979,61,61,0,1,0

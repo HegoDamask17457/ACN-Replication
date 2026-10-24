@@ -1,0 +1,29 @@
+StataFileTM:00001:01100:GREC:                          :
+00006:00006:00001:
+*! classname: twowaygraph_g
+*! family: twoway
+*! date:  3 Dec 2019
+*! time: 13:48:59
+*! graph_scheme: _GRSTYLE_
+*! naturallywhite: 1
+*! end
+
+// File created by Graph Editor Recorder.
+// Edit only if you know what you are doing.
+
+.yoffset = -1
+// Graph edits
+
+.legend.plotregion1.DragBy 3.214386163853334 -.1785770091030028
+// key region reposition
+
+.yaxis1.title.style.editstyle horizontal(left) editcopy
+.yaxis1.title._set_orientation horizontal
+.yaxis1.title.as_textbox.setstyle, style(yes)
+// title edits
+
+.yaxis1.title.DragBy 82.10945877772963 1.607193081926669
+// title reposition
+
+
+// <end>

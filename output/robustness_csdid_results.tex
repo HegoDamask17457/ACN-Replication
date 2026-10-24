@@ -1,0 +1,38 @@
+\begin{tabular}{lccc}
+\toprule
+\multicolumn{4}{l}{\textbf{Panel A: Never-attenders included}} \\
+\midrule
+Outcome & Never-treated & Not-yet-treated & TWFE \\
+\midrule
+Labor/EPA lose & \(0.007\) & \(0.009\) & \(0.162^{**}\) \\
+ & (0.021) & (0.020) & (0.068) \\
+Convotech (Econ) & \(0.246^{***}\) & \(0.232^{***}\) & \(0.265^{**}\) \\
+ & (0.066) & (0.063) & (0.132) \\
+Convotech (Non-econ) & \(0.115^{*}\) & \(0.117^{*}\) & \(0.059\) \\
+ & (0.067) & (0.066) & (0.074) \\
+Ellickson & \(-0.100\) & \(-0.108\) & \(0.363^{***}\) \\
+ & (0.178) & (0.177) & (0.134) \\
+\midrule
+\multicolumn{4}{l}{\textbf{Panel B: Never-attenders excluded}} \\
+\multicolumn{4}{l}{(only ever-attenders, not-yet-treated control)} \\
+\midrule
+Outcome & ATT & TWFE \\
+Labor/EPA lose & \(0.040\) & \(0.162^{**}\) \\
+ & (0.050) & (0.068) \\
+Convotech (Econ) & \(0.109\) & \(0.265^{**}\) \\
+ & (0.190) & (0.132) \\
+Convotech (Non-econ) & \(0.138\) & \(0.059\) \\
+ & (0.126) & (0.074) \\
+Ellickson & \(-0.203\) & \(0.363^{***}\) \\
+ & (0.191) & (0.134) \\
+\midrule
+Judge FE & \multicolumn{2}{c}{absorbed (ivar)} \\
+Year FE & \multicolumn{2}{c}{absorbed (time)} \\
+Observations & \multicolumn{2}{c}{judge-year panel, 1970--2004} \\
+\bottomrule
+\multicolumn{4}{l}{\footnotesize CSDiD (Callaway \& Sant'Anna 2021) with doubly robust estimation.} \\
+\multicolumn{4}{l}{\footnotesize Panel A includes never-attenders as control group.} \\
+\multicolumn{4}{l}{\footnotesize Panel B excludes never-attenders (ever-attenders only).} \\
+\multicolumn{4}{l}{\footnotesize TWFE reference: reghdfe with circuityear + judge FE, mw6 window.} \\
+\multicolumn{4}{l}{\footnotesize \(^{*}\)p\(<\)0.1 \(^{**}\)p\(<\)0.05 \(^{***}\)p\(<\)0.01} \\
+\end{tabular}

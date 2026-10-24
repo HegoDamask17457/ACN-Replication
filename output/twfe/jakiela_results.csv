@@ -1,0 +1,21 @@
+
+="",="(1)",="(2)",="(3)",="(4)"
+="",="res_y_y_labor_epa_lose",="res_y_y_convote_econ",="res_y_y_convote_nonecon",="res_y_y_ellickson_vec"
+
+="txres_d_y_labor_epa_lose",="0.0518",="",="",=""
+="",="(0.156)",="",="",=""
+
+="txres_d_y_convote_econ",="",="0.0403",="",=""
+="",="",="(0.192)",="",=""
+
+="txres_d_y_convote_nonecon",="",="",="0.155",=""
+="",="",="",="(0.108)",=""
+
+="txres_d_y_ellickson_vec",="",="",="",="-0.114"
+="",="",="",="",="(0.225)"
+
+="Share_Neg_Resids",="0.280",="0.170",="0.220",="0.370"
+="Het_X_Share_Neg_Resids",="0.0145",="0.00686",="0.0341",="-0.0421"
+
+="Standard errors in parentheses"
+="* p<0.05, ** p<0.01, *** p<0.001"

@@ -1,0 +1,21 @@
+\begin{center}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{l*{8}{c}}
+\toprule
+                    &\multicolumn{8}{c}{\uline{\textit{Effect on Any Prison Given}}}                                                        \\
+                    &\multicolumn{1}{c}{(1)}  &\multicolumn{1}{c}{(2)}  &\multicolumn{1}{c}{(3)}  &\multicolumn{1}{c}{(4)}  &\multicolumn{1}{c}{(5)}  &\multicolumn{1}{c}{(6)}  &\multicolumn{1}{c}{(7)}  &\multicolumn{1}{c}{(8)}  \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Post Manne          &      0.0325  &      0.0325  &      0.0262  &      0.0334* &       0.119**&       0.106**&      0.0972**&      0.0439* \\
+                    &    (0.0251)  &    (0.0251)  &    (0.0267)  &    (0.0144)  &    (0.0361)  &    (0.0356)  &    (0.0343)  &    (0.0217)  \\
+\cmidrule(lr){1-5} \cmidrule(lr){6-9}
+N (Sentences)       &       41038  &       40574  &       40574  &      156338  &       29737  &       29486  &       29486  &      104152  \\
+Crime Type          &    Non-Drug  &    Non-Drug  &    Non-Drug  &    Non-Drug  &        Drug  &        Drug  &        Drug  &        Drug  \\
+Court-Year/Judge FE &           X  &           X  &           X  &           X  &           X  &           X  &           X  &           X  \\
+Party-Time FE       &              &           X  &              &              &              &           X  &              &              \\
+Enet-Time FE        &              &              &           X  &              &              &              &           X  &              \\
+Short Run DD        &           X  &           X  &           X  &              &           X  &           X  &           X  &              \\
+Long Run DD         &              &              &              &           X  &              &              &              &           X  \\
+\bottomrule
+\end{tabular}
+}
+\end{center}
