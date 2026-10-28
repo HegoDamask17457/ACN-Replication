@@ -26,9 +26,8 @@ The paper uses a staggered difference-in-differences design to study whether att
 ```
 code/
   main.do                  master script: runs the original pipeline, then robustness.do
-  robustness.do            the five new robustness checks (my code)
-  run_csdid_final.do       Callaway & Sant'Anna estimates (my code)
-  run_robustness_windows.do, descriptive_statistics.do, sample_composition.do   (my code)
+  robustness.do            the five new robustness checks, including Callaway & Sant'Anna (my code)
+  descriptive_statistics.do, sample_composition.do   (my code)
   circuit_*.do, district_*.do, new_programs.do, twfe_robustness.do, honest_trends.do
                            original authors' scripts, with minor path and quoting fixes
 output/                    tables (.tex/.csv) and figures (.pdf) produced by the code
