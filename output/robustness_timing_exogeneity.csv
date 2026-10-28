@@ -1,2 +1,2 @@
-test,n_judges,n_ever,n_never,r2_extensive,r2a_extensive,F_extensive,pF_extensive,r2_intensive,r2a_intensive,F_intensive,pF_intensive
-timing_exogeneity,3502,379,1398,.10321063,.087279126,9.730794,0,.47553369,.43032107,,
+test,n_judges,N_extensive,N_intensive,n_ever,n_never,r2_extensive,r2a_extensive,F_extensive,pF_extensive,r2_intensive,r2a_intensive,F_intensive,pF_intensive
+timing_exogeneity,3502,1777,379,379,1398,.10321063,.087279126,9.730794,0,.47553369,.43032107,20.775757,0

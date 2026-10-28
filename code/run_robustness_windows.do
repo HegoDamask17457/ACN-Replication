@@ -67,6 +67,7 @@ reg manne x_republican x_unity x_crossa ///
     x_b10s x_b20s x_b30s x_b40s x_b50s x_pbank x_pmag ///
     , robust
 
+local N_extensive = e(N)
 local r2_extensive = e(r2)
 local r2a_extensive = e(r2_a)
 local F_extensive = e(F)
@@ -90,8 +91,26 @@ reg attend_year x_republican x_unity x_crossa ///
     x_b10s x_b20s x_b30s x_b40s x_b50s x_pbank x_pmag ///
     if manne == 1, robust
 
+local N_intensive = e(N)
 local r2_intensive = e(r2)
 local r2a_intensive = e(r2_a)
+di "Intensive margin (attend_year | manne==1): R² = " %6.4f e(r2) ", Adj R² = " %6.4f e(r2_a)
+
+* 稳健 F 无定义: 有些哑变量在 ever-attenders 中只有 0 或 1 位法官取 1,
+* 稳健方差矩阵不满秩. 去掉这些协变量后重新拟合, 用重新拟合的稳健 F
+local x_test ""
+local x_dropped ""
+foreach var of varlist x_republican x_unity x_crossa ///
+    x_pssenate x_pslc x_pssc x_pshouse x_psg x_psgo x_psenate ///
+    x_psatty x_pprivate x_pmayor x_plocct x_phouse x_pgov ///
+    x_pda x_pcc x_pccoun x_pausa x_pag x_pada x_pgovt x_black ///
+    x_b10s x_b20s x_b30s x_b40s x_b50s x_pbank x_pmag {
+    qui count if e(sample) & `var' != 0
+    if r(N) >= 2 & r(N) <= `N_intensive' - 2 local x_test "`x_test' `var'"
+    else local x_dropped "`x_dropped' `var'"
+}
+di "  F 检验中去掉的变量 (取非零值的 attender 少于 2 位): `x_dropped'"
+reg attend_year `x_test' if manne == 1, robust
 local F_intensive = e(F)
 local dfm_intensive = e(df_m)
 local dfr_intensive = e(df_r)
@@ -102,7 +121,6 @@ else {
     local pF_intensive = .
 }
 
-di "Intensive margin (attend_year | manne==1): R² = " %6.4f e(r2) ", Adj R² = " %6.4f e(r2_a)
 if `F_intensive' >= 0 {
     di "  F(" `dfm_intensive' ", " `dfr_intensive' ") = " %7.2f `F_intensive' ", p = " %6.4f `pF_intensive'
 }
@@ -117,6 +135,8 @@ clear
 set obs 1
 gen test = "timing_exogeneity"
 gen n_judges = `total_judges'
+gen N_extensive = `N_extensive'
+gen N_intensive = `N_intensive'
 gen n_ever = `n_ever'
 gen n_never = `n_never'
 gen r2_extensive = `r2_extensive'
@@ -144,7 +164,7 @@ if `F_intensive' >= 0 {
     di "      F(" `dfm_intensive' ", " `dfr_intensive' ") = " %7.2f `F_intensive' ", p = " %6.4f `pF_intensive'
 }
 else {
-    di "      F 统计量不可计算: 32 个协变量在 379 个 attender 中共线性"
+    di "      F 统计量不可计算"
 }
 di "      R²(intensive) = " %6.4f `r2_intensive' " vs R²(extensive) = " %6.4f `r2_extensive'
 di "      Ratio = " %6.2f (`r2_intensive'/`r2_extensive') "x"

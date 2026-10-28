@@ -316,10 +316,14 @@ di "  ------------------------+---------------------------+-----------------"
 * 生成比较行
 gen twfe_b = .
 gen twfe_se = .
-replace twfe_b = 0.162 ; replace twfe_se = 0.068 if outcome == "y_labor_epa_lose"
-replace twfe_b = 0.265 ; replace twfe_se = 0.132 if outcome == "y_convote_econ"
-replace twfe_b = 0.059 ; replace twfe_se = 0.074 if outcome == "y_convote_nonecon"
-replace twfe_b = 0.363 ; replace twfe_se = 0.134 if outcome == "y_ellickson_vec"
+replace twfe_b = 0.162 if outcome == "y_labor_epa_lose"
+replace twfe_se = 0.068 if outcome == "y_labor_epa_lose"
+replace twfe_b = 0.265 if outcome == "y_convote_econ"
+replace twfe_se = 0.132 if outcome == "y_convote_econ"
+replace twfe_b = 0.059 if outcome == "y_convote_nonecon"
+replace twfe_se = 0.074 if outcome == "y_convote_nonecon"
+replace twfe_b = 0.363 if outcome == "y_ellickson_vec"
+replace twfe_se = 0.134 if outcome == "y_ellickson_vec"
 
 * 显著性星号
 gen sig = ""

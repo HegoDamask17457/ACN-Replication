@@ -12,7 +12,6 @@ set more off
 cap log close
 
 * --- 路径设置 ---
-* 已设置为你的 Windows 路径，直接使用即可
 global root "path/to/acn-replication"
 cd "$root"
 cap mkdir "logs"
@@ -52,7 +51,7 @@ di "============================================================"
 * -------------------------------------------------------------------
 * 保留每位法官一行，包含所有协变量、参加状态和参加年份
 preserve
-    * 32 个背景特征 + manne + attend_year, 按法官 collapse
+    * 31 个背景特征 + manne + attend_year, 按法官 collapse
     collapse (max) manne attend_year ///
         x_republican x_unity x_crossa ///
         x_pssenate x_pslc x_pssc x_pshouse x_psg x_psgo x_psenate ///
@@ -79,14 +78,15 @@ preserve
     * -------------------------------------------------------------------
 
     di _newline "---------- (A) Extensive margin: 谁参加了 Manne? ----------"
-    * 全样本: manne 对 32 个协变量
+    * 全样本: manne 对 31 个协变量
     reg manne x_republican x_unity x_crossa ///
         x_pssenate x_pslc x_pssc x_pshouse x_psg x_psgo x_psenate ///
         x_psatty x_pprivate x_pmayor x_plocct x_phouse x_pgov ///
         x_pda x_pcc x_pccoun x_pausa x_pag x_pada x_pgovt x_black ///
         x_b10s x_b20s x_b30s x_b40s x_b50s x_pbank x_pmag ///
         , robust
-    * 记录 R² 和 F 统计量
+    * 记录 N、R² 和 F 统计量
+    local N_extensive = e(N)
     local r2_extensive = e(r2)
     local r2a_extensive = e(r2_a)
     local F_extensive = e(F)
@@ -100,20 +100,38 @@ preserve
     * -------------------------------------------------------------------
 
     di _newline "---------- (B) Intensive margin: 何时参加 Manne? ----------"
-    * 只在 ever-attenders 中: attend_year 对 32 个协变量
+    * 只在 ever-attenders 中: attend_year 对 31 个协变量
     reg attend_year x_republican x_unity x_crossa ///
         x_pssenate x_pslc x_pssc x_pshouse x_psg x_psgo x_psenate ///
         x_psatty x_pprivate x_pmayor x_plocct x_phouse x_pgov ///
         x_pda x_pcc x_pccoun x_pausa x_pag x_pada x_pgovt x_black ///
         x_b10s x_b20s x_b30s x_b40s x_b50s x_pbank x_pmag ///
         if manne == 1, robust
-    * 记录 R² 和 F 统计量
+    * 记录 N 和 R²
+    local N_intensive = e(N)
     local r2_intensive = e(r2)
     local r2a_intensive = e(r2_a)
+    di "Intensive margin (attend_year | manne==1): R² = " %6.4f e(r2) ", Adj R² = " %6.4f e(r2_a)
+
+    * 这里稳健 F 无定义: 在 ever-attenders 中, 有些哑变量只有 0 或 1 位法官取 1,
+    * 稳健方差矩阵不满秩. 去掉这些协变量后重新拟合, 用重新拟合的稳健 F
+    local x_test ""
+    local x_dropped ""
+    foreach var of varlist x_republican x_unity x_crossa ///
+        x_pssenate x_pslc x_pssc x_pshouse x_psg x_psgo x_psenate ///
+        x_psatty x_pprivate x_pmayor x_plocct x_phouse x_pgov ///
+        x_pda x_pcc x_pccoun x_pausa x_pag x_pada x_pgovt x_black ///
+        x_b10s x_b20s x_b30s x_b40s x_b50s x_pbank x_pmag {
+        qui count if e(sample) & `var' != 0
+        if r(N) >= 2 & r(N) <= `N_intensive' - 2 local x_test "`x_test' `var'"
+        else local x_dropped "`x_dropped' `var'"
+    }
+    di "  F 检验中去掉的变量 (取非零值的 attender 少于 2 位): `x_dropped'"
+    reg attend_year `x_test' if manne == 1, robust
+    local k_intensive = e(df_m)
     local F_intensive = e(F)
     local pF_intensive = Ftail(e(df_m), e(df_r), e(F))
-    di "Intensive margin (attend_year | manne==1): R² = " %6.4f e(r2) ", Adj R² = " %6.4f e(r2_a)
-    di "  F(" e(df_m) ", " e(df_r) ") = " %7.2f e(F) ", p = " %6.4f `pF_intensive'
+    di "  稳健 F(" e(df_m) ", " e(df_r) ") = " %7.2f e(F) ", p = " %6.4f `pF_intensive'
 
     * -------------------------------------------------------------------
     *  4. 仅用 elastic-net 选出的 6 个 timing 预测变量
@@ -125,6 +143,7 @@ preserve
     di "  变量: x_psatty x_pgov x_b10s x_b20s x_b40s x_b50s"
     reg attend_year x_psatty x_pgov x_b10s x_b20s x_b40s x_b50s ///
         if manne == 1, robust
+    local N_enet = e(N)
     local r2_enet = e(r2)
     local r2a_enet = e(r2_a)
     local F_enet = e(F)
@@ -162,9 +181,9 @@ preserve
     di ""
     di "           模型                  N    R²    Adj R²   F       p(F)"
     di "  ----------------------------------------------------------------------"
-    di %-30s "Extensive (谁参加)" _col(32) %7.0f e(N) "  " %5.4f `r2_extensive' "  " %5.4f `r2a_extensive' "  " %6.2f `F_extensive' "  " %6.4f `pF_extensive'
-    di %-30s "Intensive (何时参加)" _col(32) %7.0f e(N) "  " %5.4f `r2_intensive' "  " %5.4f `r2a_intensive' "  " %6.2f `F_intensive' "  " %6.4f `pF_intensive'
-    di %-30s "ENet-6 变量 (何时参加)" _col(32) %7.0f e(N) "  " %5.4f `r2_enet' "  " %5.4f `r2a_enet' "  " %6.2f `F_enet' "  " %6.4f `pF_enet'
+    di %-30s "Extensive (谁参加)" _col(32) %7.0f `N_extensive' "  " %5.4f `r2_extensive' "  " %5.4f `r2a_extensive' "  " %6.2f `F_extensive' "  " %6.4f `pF_extensive'
+    di %-30s "Intensive (何时参加)" _col(32) %7.0f `N_intensive' "  " %5.4f `r2_intensive' "  " %5.4f `r2a_intensive' "  " %6.2f `F_intensive' "  " %6.4f `pF_intensive'
+    di %-30s "ENet-6 变量 (何时参加)" _col(32) %7.0f `N_enet' "  " %5.4f `r2_enet' "  " %5.4f `r2a_enet' "  " %6.2f `F_enet' "  " %6.4f `pF_enet'
     di ""
     di "  结论: "
     di "  - 如果 Intensive 的 R² 远小于 Extensive 的 R²"
@@ -187,15 +206,19 @@ preserve
     file write fh "`l1'" _n
     local l2 = "Adj. R-squared & " + string(`r2a_extensive',"%5.3f") + " & " + string(`r2a_intensive',"%5.3f") + " " + char(92) + char(92)
     file write fh "`l2'" _n
-    local l3 = "F-statistic & " + string(`F_extensive',"%6.2f") + " & --- " + char(92) + char(92)
+    local l3 = "Robust F-statistic & " + string(`F_extensive',"%6.2f") + " & " + string(`F_intensive',"%6.2f") + "\(^{a}\) " + char(92) + char(92)
     file write fh "`l3'" _n
-    local l4 = "N (judges) & " + string(`total_judges',"%5.0f") + " & " + string(`n_ever',"%5.0f") + " " + char(92) + char(92)
+    local l3p = "p-value (F) & " + string(`pF_extensive',"%5.3f") + " & " + string(`pF_intensive',"%5.3f") + " " + char(92) + char(92)
+    file write fh "`l3p'" _n
+    local l4 = "N (judges) & " + string(`N_extensive',"%5.0f") + " & " + string(`N_intensive',"%5.0f") + " " + char(92) + char(92)
     file write fh "`l4'" _n
-    local l5 = "Controls & 32 covariates & 32 covariates " + char(92) + char(92)
+    local l5 = "Controls & 31 covariates & 31 covariates " + char(92) + char(92)
     file write fh "`l5'" _n
     file write fh "\bottomrule" _n
-    file write fh "\multicolumn{3}{l}{\footnotesize Standard errors robust. 32 covariates include} \\" _n
+    file write fh "\multicolumn{3}{l}{\footnotesize Standard errors robust. 31 covariates include} \\" _n
     file write fh "\multicolumn{3}{l}{\footnotesize demographics, education, and political background.} \\" _n
+    file write fh "\multicolumn{3}{l}{\footnotesize \(^{a}\)Joint test of the `k_intensive' covariates that are nonzero} \\" _n
+    file write fh "\multicolumn{3}{l}{\footnotesize for at least 2 attenders (robust VCE otherwise not full rank).} \\" _n
     file write fh "\multicolumn{3}{l}{\footnotesize \(^{*}\)p\(<\)0.1 \(^{**}\)p\(<\)0.05 \(^{***}\)p\(<\)0.01} \\" _n
     file write fh "\end{tabular}" _n
     file close fh
@@ -278,7 +301,7 @@ di "  Never-attenders: " r(N)
 * =====================================================================
 
 di _newline "--- Step 2: 估计倾向得分 (Logit) ---"
-* 用 logit 估计 Pr(manne=1 | 32 covariates)
+* 用 logit 估计 Pr(manne=1 | 31 covariates)
 logit manne x_republican x_unity x_crossa ///
     x_pssenate x_pslc x_pssc x_pshouse x_psg x_psgo x_psenate ///
     x_psatty x_pprivate x_pmayor x_plocct x_phouse x_pgov ///
@@ -362,7 +385,7 @@ keep if everattend == 0
 di "Never-attender 观测数 (合并前): " _N
 * 合并匹配结果
 merge m:1 songername using `matched_save', keep(match) nogen
-di "Never-attender 观测数 (合并后, 含未匹配): " _N
+di "Never-attender 观测数 (合并后): " _N
 * 只保留成功匹配的
 keep if pseudo_attend != .
 di "成功匹配的观测数: " _N
@@ -454,13 +477,14 @@ else {
 * 对比基准
 
 di _newline "  --- 对比 ---"
-di "  原文 Table 1 col(1) manne_post: `twfe_ellickson'** (SE=`twfe_se_ellickson')"
-* 其他三个主要结果变量
+di "  TWFE manne_post (Table 1 col 1): " %7.4f `twfe_ellickson' " (SE=" %6.4f `twfe_se_ellickson' ")"
+* 其他三个主要结果变量, 样本与各自的 TWFE 基准一致
+* (只限 mw6; econ_case/author 限制只用于 y_ellickson_vec)
 
 di _newline "--- 其他结果变量 ---"
 foreach yvar in y_labor_epa_lose y_convote_econ y_convote_nonecon {
     cap reghdfe `yvar' pseudo_manne_post ///
-        if pseudo_mw6 == 1 & econ_case == 1 & author == 1 ///
+        if pseudo_mw6 == 1 ///
         [aw=WJT], absorb(circuityear judgefe) cl(songername)
     if _rc == 0 {
         local outcome_lab = substr("`yvar'", 3, .)
@@ -563,7 +587,7 @@ di "  方法: 用倾向得分匹配给 never-attenders 分配 pseudo 参加年�
 di "  然后对 never-attenders 跑与原文相同的 DID / event-study"
 di ""
 di "  比较:"
-di "    (A) 真实处理效应 (Table 1 col 1): `twfe_ellickson'** (`twfe_se_ellickson')"
+di "    (A) 真实处理效应 (Table 1 col 1): " %7.4f `twfe_ellickson' " (" %6.4f `twfe_se_ellickson' ")"
 di "    (B) Placebo 效应 (never-attenders): 见 Step 8 输出"
 di ""
 di "  解读:"
@@ -638,12 +662,12 @@ di "  检验 4: Double Selection Robustness"
 di "============================================================"
 
 * =====================================================================
-*  全局定义: 32 个协变量, 原文 enet6, 结果变量列表
+*  全局定义: 31 个协变量, 原文 enet6, 结果变量列表
 
 * =====================================================================
 * Use #delimit for multiline global
 #delimit ;
-global all32 "x_republican x_unity x_crossa x_pssenate x_pslc x_pssc
+global all31 "x_republican x_unity x_crossa x_pssenate x_pslc x_pssc
     x_pshouse x_psg x_psgo x_psenate x_psatty x_pprivate x_pmayor
     x_plocct x_phouse x_pgov x_pda x_pcc x_pccoun x_pausa x_pag
     x_pada x_pgovt x_black x_b10s x_b20s x_b30s x_b40s x_b50s
@@ -663,9 +687,9 @@ gen five_year = year - mod(year, 5)
 * 保存面板数据 (稍后 merge 回用)
 tempfile panel_data
 save `panel_data'
-* collapse 到法官层面: 32协变量用 (max) (时间不变),
+* collapse 到法官层面: 31 个协变量用 (max) (时间不变),
 * 结果变量用 (mean) 取法官均值
-collapse (max) manne attend_year $all32 ///
+collapse (max) manne attend_year $all31 ///
     (mean) mean_ellickson = y_ellickson_vec ///
     (mean) mean_labor     = y_labor_epa_lose ///
     (mean) mean_convecon  = y_convote_econ ///
@@ -692,12 +716,12 @@ di _newline "--- Step 2: Double Lasso Selection ---"
 use `judge_data', clear
 
 * -------------------------------------------------------------------
-*  2a. S1: Treatment Lasso (manne ~ all32)
+*  2a. S1: Treatment Lasso (manne ~ all31)
 
 * -------------------------------------------------------------------
 
-di _newline "  (S1) rlasso manne ~ all32"
-rlasso manne $all32
+di _newline "  (S1) rlasso manne ~ all31"
+rlasso manne $all31
 local s1 = e(selected)
 local n_s1 : word count `s1'
 di "  S1 变量数: `n_s1'"
@@ -709,8 +733,8 @@ di "  S1 变量: `s1'"
 * -------------------------------------------------------------------
 foreach outcome in ellickson labor convecon convnonecon {
 
-    di _newline "  (S2) rlasso mean_`outcome' ~ all32"
-    rlasso mean_`outcome' $all32
+    di _newline "  (S2) rlasso mean_`outcome' ~ all31"
+    rlasso mean_`outcome' $all31
 	    local s2_`outcome' = e(selected)
 	    * rlasso 返回 "." 表示零变量, 用 subinstr 去除
 	    local s2_`outcome' : subinstr local s2_`outcome' "." "", all word
@@ -867,14 +891,14 @@ foreach outcome in ellickson labor convecon convnonecon {
     }
 
     * ---------------------------------------------------------------
-    *  (d) Full 32: + i.five_year#c.(all 32)
+    *  (d) Full 31: + i.five_year#c.(all 31)
 
     * ---------------------------------------------------------------
 
-    di _newline "  (d) Full 32 — + i.five_year#c.(32 covariates)"
+    di _newline "  (d) Full 31 — + i.five_year#c.(31 covariates)"
     cap reghdfe `yvar' manne_post ///
         if `ifcond' [aw=WJT], ///
-        absorb(circuityear judgefe i.five_year#c.(${all32})) ///
+        absorb(circuityear judgefe i.five_year#c.(${all31})) ///
         cluster(judgefe) noconstant
     if _rc == 0 {
         local b_`outcome'_full = _b[manne_post]
@@ -900,7 +924,7 @@ di "============================================================"
 di ""
 di "  原文 elastic net (attend_year): ${enet6}"
 di ""
-di "  S1 (rlasso manne ~ all32): `n_s1' variables"
+di "  S1 (rlasso manne ~ all31): `n_s1' variables"
 di "    `s1'"
 di ""
 foreach outcome in ellickson labor convecon convnonecon {
@@ -919,7 +943,7 @@ di _newline "============================================================"
 di "  系数比较: manne_post"
 di "============================================================"
 di ""
-di "  Outcome             (a) Baseline    (b) Enet-6     (c) Double     (d) Full 32"
+di "  Outcome             (a) Baseline    (b) Enet-6     (c) Double     (d) Full 31"
 di "  ----------------------------------------------------------------------"
 foreach outcome in ellickson labor convecon convnonecon {
     if "`outcome'" == "ellickson" local lab "Ellickson (econ)"
@@ -938,7 +962,7 @@ di ""
 di "  注: (a) = circuityear + judgefe"
 di "      (b) = (a) + i.five_year#c.(enet6: ${enet6})"
 di "      (c) = (a) + i.five_year#c.(S_double, outcome-specific)"
-di "      (d) = (a) + i.five_year#c.(all 32 covariates)"
+di "      (d) = (a) + i.five_year#c.(all 31 covariates)"
 * 与原文 Table 1 对比
 
 di _newline "  --- 原文 Table 1 col(1) 基准 ---"
@@ -989,7 +1013,7 @@ cap file close fh
 file open fh using "output/robustness_double_selection.tex", write replace
 file write fh "\begin{tabular}{lcccc}" _n
 file write fh "\toprule" _n
-file write fh "Outcome & Baseline & Enet-6 & Double Sel. & Full 32 \\" _n
+file write fh "Outcome & Baseline & Enet-6 & Double Sel. & Full 31 \\" _n
 file write fh "\midrule" _n
 foreach outcome in ellickson labor convecon convnonecon {
     if "`outcome'" == "ellickson" local lab "Ellickson"
@@ -1059,11 +1083,11 @@ foreach outcome in ellickson labor convecon convnonecon {
 file write fh "\midrule" _n
 file write fh "circuityear FE & Y & Y & Y & Y \\" _n
 file write fh "judge FE & Y & Y & Y & Y \\" _n
-file write fh "i.five\_year $\times$ (controls) & N & Enet-6 & Double Sel. & All 32 \\" _n
+file write fh "i.five\_year $\times$ (controls) & N & Enet-6 & Double Sel. & All 31 \\" _n
 file write fh "\bottomrule" _n
 file write fh "\multicolumn{5}{l}{\footnotesize Controls: Enet-6 = original elastic net selection;} \\" _n
 file write fh "\multicolumn{5}{l}{\footnotesize Double Sel. = outcome-specific S1 $\cup$ S2 from rlasso;} \\" _n
-file write fh "\multicolumn{5}{l}{\footnotesize Full 32 = all 32 covariates. SE clustered at judge level.} \\" _n
+file write fh "\multicolumn{5}{l}{\footnotesize Full 31 = all 31 covariates. SE clustered at judge level.} \\" _n
 file write fh "\multicolumn{5}{l}{\footnotesize \(^{*}\)p\(<\)0.1 \(^{**}\)p\(<\)0.05 \(^{***}\)p\(<\)0.01} \\" _n
 file write fh "\end{tabular}" _n
 file close fh
@@ -1079,15 +1103,15 @@ di "  检验 4 汇总"
 di "============================================================"
 di ""
 di "  方法: Belloni et al. (2014) Double Selection"
-di "  - S1: rlasso manne ~ 32 covariates (plug-in penalty)"
-di "  - S2: rlasso mean_outcome ~ 32 covariates"
+di "  - S1: rlasso manne ~ 31 covariates (plug-in penalty)"
+di "  - S2: rlasso mean_outcome ~ 31 covariates"
 di "  - S_double = S1 ∪ S2"
 di ""
 di "  对比 4 种控制变量集:"
 di "    (a) Baseline (no additional controls)"
 di "    (b) Original Elastic Net (6 vars)"
 di "    (c) Double Selection"
-di "    (d) Full 32 covariates"
+di "    (d) Full 31 covariates"
 di ""
 di "  解读: 如果 manne_post 系数在 (a)-(d) 之间稳定,"
 di "        说明控制变量选择不影响结论。"
